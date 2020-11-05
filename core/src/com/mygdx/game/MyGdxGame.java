@@ -26,7 +26,7 @@ public class MyGdxGame extends ApplicationAdapter {
 	int imgX, imgY;
 
 	InputHandler handler;
-	CameraShake shaker;
+	CameraLook lookAround;
 
 	boolean isJailed = false;
 	int jailLeft;
@@ -49,30 +49,33 @@ public class MyGdxGame extends ApplicationAdapter {
 		map = new Texture("Bigmap.jpg");
 		imgWidth = img.getWidth();
 		imgHeight = img.getHeight();
+
+		//Starting off the character not at the very borders
 		imgX = 40;
 		imgY = 40;
 
 		//Setting up label
 		setUpLabelStyle();
-		label = new Label("", labelStyle);
+		label = new Label("Position will go here.", labelStyle);
 
 		//Getting the world dimensions
 		WORLDWIDTH = map.getWidth();
 		WORLDHEIGHT = map.getHeight();
 
-		WIDTH = Gdx.graphics.getWidth();
-		HEIGHT = Gdx.graphics.getHeight();
-		cam = new OrthographicCamera(WIDTH,HEIGHT);
-
 		//Setting up input handler
 		handler = new InputHandler(batch, cam, imgX, imgY);
 		Gdx.input.setInputProcessor(handler);
 
-		shaker = new CameraShake(cam, 100, batch, null, 50, 95, "v");
-
+		//Set up camera
+		WIDTH = Gdx.graphics.getWidth();
+		HEIGHT = Gdx.graphics.getHeight();
+		cam = new OrthographicCamera(WIDTH,HEIGHT);
 		cam.translate(WIDTH/2, HEIGHT/2);
 		cam.update();
 		batch.setProjectionMatrix(cam.combined);
+
+		//Lastly sets up camera effect
+		lookAround = new CameraLook(cam, 200, batch, null, 10, 95);
 	}
 
 	public Vector2 getViewPortOrigin() {
@@ -87,13 +90,13 @@ public class MyGdxGame extends ApplicationAdapter {
 		Vector2 screenPos = getScreenCoordinates();
 
 		//Right side
-		if (screenPos.x > WIDTH - imgWidth - border) {  // about to go off vieport
-			if (handler.getImgX() + imgWidth > WORLDWIDTH - border) {  // about to go off the world
+		if (screenPos.x > WIDTH - imgWidth - border) { //about to go off vieport
+			if (handler.getImgX() + imgWidth > WORLDWIDTH - border) { //about to go off the world
 				wrapCoordinates(WORLDWIDTH, WORLDHEIGHT);
 				cam.position.x = 320;
 				cam.update();
                 batch.setProjectionMatrix(cam.combined);
-            } else { // just pan the camera because I have more world to explore
+            } else { //pan the camera
 				handler.setImgX(handler.getImgX() + 100);
 				cam.position.x = cam.position.x + 640;
                 System.out.println(cam.position.x);
@@ -103,16 +106,13 @@ public class MyGdxGame extends ApplicationAdapter {
 		} 
 		
 		//Left side
-		if (screenPos.x < border) {
-			if (handler.getImgX() <= 0) {
+		if (screenPos.x < border) { // about to go off vieport
+			if (handler.getImgX() <= 0) { // about to go off the world
 				wrapCoordinates(WORLDWIDTH, WORLDHEIGHT);
 				cam.position.x = WORLDWIDTH - 320;
 				cam.update();
                 batch.setProjectionMatrix(cam.combined);
-			} else { // about to leave the viewport on the left side
-				//move the camera left - subtract the amount we are over the border from
-				//the current camera position
-				//this is for infinite world in the -x direction
+			} else { //pan the camera
 				
 				cam.position.x = cam.position.x - 640;
 				handler.setImgX(handler.getImgX() - 80);
@@ -123,10 +123,10 @@ public class MyGdxGame extends ApplicationAdapter {
 		}
 		
 		//Top side
-        if (screenPos.y > HEIGHT - imgHeight - border) {  // go off viewport vertically
-            if (handler.getImgY() + imgHeight > WORLDHEIGHT - border) {  // out of real estate in y direction
+        if (screenPos.y > HEIGHT - imgHeight - border) { //go off viewport vertically
+            if (handler.getImgY() + imgHeight > WORLDHEIGHT - border) { //out of space in y direction
                 lockCoordinates(WORLDWIDTH, WORLDHEIGHT);
-            } else { // keep panning we have more room
+            } else { //pan the camera
 				handler.setImgY(handler.getImgY() + 80);
 				cam.position.y = cam.position.y + 480;
                 System.out.println(cam.position.y);
@@ -135,10 +135,10 @@ public class MyGdxGame extends ApplicationAdapter {
 			}
 			
 		//Bottom side
-		} if (screenPos.y < border) {
-			if (handler.getImgY() <= 0) {  // out of real estate in y direction
+		} if (screenPos.y < border) { //go off viewport vertically
+			if (handler.getImgY() <= 0) {  //out of space in y direction
 				lockCoordinates(WORLDWIDTH, WORLDHEIGHT);
-			} else {
+			} else { //pan the camera
 				handler.setImgY(handler.getImgY() - 80);
 				cam.position.y = cam.position.y - 480;
 				System.out.println(cam.position.y);
@@ -204,12 +204,27 @@ public class MyGdxGame extends ApplicationAdapter {
 		Gdx.gl.glClearColor(1, 0, 0, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-		//Setting text
+		if (lookAround.isActive()) {
+			lookAround.play();
+		} else {
+			//Seeing if to pan
+			panCoordinates(10);
+
+			//Check if we're looking around
+			if (Gdx.input.isKeyJustPressed(Keys.UP)) {
+				lookAround.start(0);
+			} else if (Gdx.input.isKeyJustPressed(Keys.DOWN)) {
+				lookAround.start(1);
+			} else if (Gdx.input.isKeyJustPressed(Keys.LEFT)) {
+				lookAround.start(2);
+			} else if (Gdx.input.isKeyJustPressed(Keys.RIGHT)) {
+				lookAround.start(3);
+			}
+		}
+
+		//Setting up position text
 		label.setPosition(450+(cam.position.x-WIDTH/2),40+cam.position.y-HEIGHT/2);
 		label.setText(handler.getImgX() + ", " + handler.getImgY());
-
-		//Seeing if to pan
-		panCoordinates(10);
 
 		//Jail options
 		if (Gdx.input.isKeyJustPressed(Keys.J)) {

@@ -38,20 +38,6 @@ class InputHandler extends InputAdapter {
 	@Override
 	public boolean keyDown(int keyCode) {
 
-		if (keyCode == Keys.UP) {
-			cam.position.y -= 5;
-			updateCam();
-		} else if (keyCode == Keys.DOWN) {
-			cam.position.y += 5;
-			updateCam();
-		} else if (keyCode == Keys.LEFT) {
-			cam.position.x += 5;
-			updateCam();
-		} else if (keyCode == Keys.RIGHT) {
-			cam.position.x -= 5;
-			updateCam();
-		}
-
 		if (keyCode == Keys.W) {
 			imgY += 20;
 		} else if (keyCode == Keys.S) {
